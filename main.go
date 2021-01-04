@@ -15,10 +15,10 @@ import (
 )
 
 type Customer struct {
-	CId           int       `json:"CId"`
+	CId           int       `json:"cID"`
 	Cname         string    `json:"cName"`
 	Caddress      string    `json:"cAddress"`
-	Cphone        int       `json:"cPhone"`
+	CTel          int       `json:"cTel"`
 	CregisterDate time.Time `json:"cRegisterDate"`
 }
 
@@ -29,18 +29,22 @@ type AllDataToSend struct {
 }
 
 type OneCustomerToSend struct {
-	CId           int       `json:"CId"`
+	CId           int       `json:"cID"`
 	Cname         string    `json:"cName"`
 	Caddress      string    `json:"cAddress"`
-	Cphone        int       `json:"cPhone"`
+	CTel          int       `json:"cTel"`
 	CregisterDate time.Time `json:"cRegisterDate"`
 	Msg           string    `json:"msg"`
 }
 
 type Report struct {
 	TotalCustomers int    `json:"totalCustomers`
-	Period         int    `json:"period`
-	Msg            string `json:msg`
+	Period         int    `json:"period"`
+	Msg            string `json:"msg"`
+}
+
+type Message struct {
+	Msg string `json:"msg"`
 }
 
 var Customers []Customer
@@ -55,17 +59,57 @@ func homePage(w http.ResponseWriter, r *http.Request) {
 func returnAllCustomers(w http.ResponseWriter, r *http.Request) {
 	// fmt.Println("Endpoint Hit: returnAllArticles")
 
-	var toSent AllDataToSend
-	toSent.Customers = Customers
-	toSent.Size = len(Customers)
+	var strTemp string
 
-	if len(Customers) != 0 {
-		toSent.Msg = "success"
-		json.NewEncoder(w).Encode(toSent)
-	} else {
-		json.NewEncoder(w).Encode("error")
+	var keyName string
+
+	var lengOfInput int
+	r.ParseForm()
+	for key, value := range r.Form {
+		// fmt.Printf("%s = %s", key, value)
+		strTemp = value[0]
+		keyName = key
+		lengOfInput = len(value)
+		break
 	}
 
+	// json.NewEncoder(w).Encode(strTemp)
+
+	if lengOfInput != 0 && keyName == "cName" {
+		var flag int = 0
+		for _, customer := range Customers {
+			if strings.Contains(customer.Cname, strTemp) == true {
+				var customerToSend OneCustomerToSend
+				customerToSend.CId = customer.CId
+				customerToSend.Caddress = customer.Caddress
+				customerToSend.Cname = customer.Cname
+				customerToSend.CTel = customer.CTel
+				customerToSend.CregisterDate = customer.CregisterDate
+				customerToSend.Msg = "success"
+				json.NewEncoder(w).Encode(customerToSend)
+				flag = 1
+			}
+		}
+
+		if flag == 0 {
+			var message Message
+			message.Msg = "error"
+			json.NewEncoder(w).Encode(message)
+		}
+	} else {
+		var toSent AllDataToSend
+		toSent.Customers = Customers
+		toSent.Size = len(Customers)
+
+		if len(Customers) != 0 {
+			toSent.Msg = "success"
+			json.NewEncoder(w).Encode(toSent)
+		} else {
+			var message Message
+			message.Msg = "error"
+			json.NewEncoder(w).Encode(message)
+		}
+	}
 }
 
 func returnSingleCustomer(w http.ResponseWriter, r *http.Request) {
@@ -81,7 +125,7 @@ func returnSingleCustomer(w http.ResponseWriter, r *http.Request) {
 			customerToSend.CId = customer.CId
 			customerToSend.Caddress = customer.Caddress
 			customerToSend.Cname = customer.Cname
-			customerToSend.Cphone = customer.Cphone
+			customerToSend.CTel = customer.CTel
 			customerToSend.CregisterDate = customer.CregisterDate
 			customerToSend.Msg = "success"
 			json.NewEncoder(w).Encode(customerToSend)
@@ -89,7 +133,9 @@ func returnSingleCustomer(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if flag == 0 {
-		json.NewEncoder(w).Encode("error")
+		var message Message
+		message.Msg = "error"
+		json.NewEncoder(w).Encode(message)
 	}
 }
 
@@ -111,7 +157,7 @@ func createNewCustomer(w http.ResponseWriter, r *http.Request) {
 	customerToSend.CId = customer.CId
 	customerToSend.Caddress = customer.Caddress
 	customerToSend.Cname = customer.Cname
-	customerToSend.Cphone = customer.Cphone
+	customerToSend.CTel = customer.CTel
 	customerToSend.CregisterDate = customer.CregisterDate
 	customerToSend.Msg = "success"
 
@@ -130,12 +176,16 @@ func deleteCustomer(w http.ResponseWriter, r *http.Request) {
 		if customer.CId == temp {
 			Customers = append(Customers[:index], Customers[index+1:]...)
 
-			json.NewEncoder(w).Encode("success")
+			var message Message
+			message.Msg = "success"
+			json.NewEncoder(w).Encode(message)
 			flag = 1
 		}
 	}
 	if flag == 0 {
-		json.NewEncoder(w).Encode("error")
+		var message Message
+		message.Msg = "error"
+		json.NewEncoder(w).Encode(message)
 	}
 
 }
@@ -157,13 +207,13 @@ func updateCustomer(w http.ResponseWriter, r *http.Request) {
 		if customer.CId == temp {
 			Customers[index].Cname = customerTemp.Cname
 			Customers[index].Caddress = customerTemp.Caddress
-			Customers[index].Cphone = customerTemp.Cphone
+			Customers[index].CTel = customerTemp.CTel
 
 			var customerToSend OneCustomerToSend
 			customerToSend.CId = Customers[index].CId
 			customerToSend.Caddress = Customers[index].Caddress
 			customerToSend.Cname = Customers[index].Cname
-			customerToSend.Cphone = Customers[index].Cphone
+			customerToSend.CTel = Customers[index].CTel
 			customerToSend.CregisterDate = Customers[index].CregisterDate
 			customerToSend.Msg = "success"
 			json.NewEncoder(w).Encode(customerToSend)
@@ -171,7 +221,9 @@ func updateCustomer(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if flag == 0 {
-		json.NewEncoder(w).Encode("error")
+		var message Message
+		message.Msg = "error"
+		json.NewEncoder(w).Encode(message)
 	}
 
 }
@@ -214,9 +266,9 @@ func returnReport(w http.ResponseWriter, r *http.Request) {
 
 	var numOfCustomer int = 0
 	for _, customer := range Customers {
-		json.NewEncoder(w).Encode(customer.CregisterDate.Month().String())
+		// json.NewEncoder(w).Encode(customer.CregisterDate.Month().String())
 		if customer.CregisterDate.Month().String() == tempMonth {
-			json.NewEncoder(w).Encode(tempMonth)
+			// json.NewEncoder(w).Encode(tempMonth)
 
 			numOfCustomer += 1
 		}
@@ -230,40 +282,43 @@ func returnReport(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func returnCustomerByName(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	key := vars["cName"]
+// func returnCustomerByName(w http.ResponseWriter, r *http.Request) {
+// 	vars := mux.
+// 	id := vars["id"]
 
-	var flag int = 0
-	for _, customer := range Customers {
-		if strings.Contains(customer.Cname, key) == true {
-			var customerToSend OneCustomerToSend
-			customerToSend.CId = customer.CId
-			customerToSend.Caddress = customer.Caddress
-			customerToSend.Cname = customer.Cname
-			customerToSend.Cphone = customer.Cphone
-			customerToSend.CregisterDate = customer.CregisterDate
-			customerToSend.Msg = "success"
-			json.NewEncoder(w).Encode(customerToSend)
-			flag = 1
-		}
-	}
-	if flag == 0 {
-		json.NewEncoder(w).Encode("error")
-	}
-}
+// 	vars := mux.Vars(r)
+// 	key := vars["cName"]
+
+// 	var flag int = 0
+// 	for _, customer := range Customers {
+// 		if strings.Contains(customer.Cname, key) == true {
+// 			var customerToSend OneCustomerToSend
+// 			customerToSend.CId = customer.CId
+// 			customerToSend.Caddress = customer.Caddress
+// 			customerToSend.Cname = customer.Cname
+// 			customerToSend.Cphone = customer.Cphone
+// 			customerToSend.CregisterDate = customer.CregisterDate
+// 			customerToSend.Msg = "success"
+// 			json.NewEncoder(w).Encode(customerToSend)
+// 			flag = 1
+// 		}
+// 	}
+// 	if flag == 0 {
+// 		json.NewEncoder(w).Encode("error")
+// 	}
+// }
 
 func handleRequests() {
 	myRouter := mux.NewRouter().StrictSlash(true)
 	myRouter.HandleFunc("/", homePage)
 	myRouter.HandleFunc("/customers", returnAllCustomers).Methods("GET")
-	myRouter.HandleFunc("/customer/{id}", returnSingleCustomer).Methods("GET")
+	myRouter.HandleFunc("/customers/{id}", returnSingleCustomer).Methods("GET")
 	myRouter.HandleFunc("/report/{month}", returnReport).Methods("GET")
-	myRouter.HandleFunc("/customers/{cName}", returnCustomerByName).Methods("GET")
+	// myRouter.HandleFunc("/customers/{cName}", returnCustomerByName).Methods("GET")
 
-	myRouter.HandleFunc("/customer", createNewCustomer).Methods("POST")
-	myRouter.HandleFunc("/customer/{id}", deleteCustomer).Methods("DELETE")
-	myRouter.HandleFunc("/customer/{id}", updateCustomer).Methods("PUT")
+	myRouter.HandleFunc("/customers", createNewCustomer).Methods("POST")
+	myRouter.HandleFunc("/customers/{id}", deleteCustomer).Methods("DELETE")
+	myRouter.HandleFunc("/customers/{id}", updateCustomer).Methods("PUT")
 
 	log.Fatal(http.ListenAndServe(":10000", myRouter))
 }
